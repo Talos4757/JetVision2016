@@ -47,6 +47,8 @@ int App::Run()
 	long long start, elapsed;
 	struct timespec begin, current;
 
+	JetServer::StartServer(NULL, NULL);
+
 	Mat *image = new Mat();
 
 	bool stopCamera = false;
@@ -113,6 +115,9 @@ int App::Run()
 	}
 
 	cerr << "" << endl;
+
+	void* jetret;
+	JetServer::CloseServer(&jetret);
 
 	stopCamera = true;
 	void* threadRet;

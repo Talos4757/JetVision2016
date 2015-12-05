@@ -19,6 +19,8 @@
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudaimgproc.hpp>
 
+#include "../server/JetServer.h"
+#include "../server/Target.h"
 #include "Utils.h"
 
 #define MIN_THRESH 180

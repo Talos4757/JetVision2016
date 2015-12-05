@@ -11,11 +11,11 @@ int main(int argc, char* argv[])
 	{
 		for(int i = 1; i < argc; i++)
 		{
-			if(string(argv[i]) == "-d")
+			if(strcmp(argv[i], "-d"))
 			{
 				display = true;
 			}
-			else if(string(argv[i]) == "-dd")
+			else if(strcmp(argv[i], "-dd"))
 			{
 				debugDisplay = true;
 			}
@@ -31,6 +31,7 @@ int main(int argc, char* argv[])
 	{
 		return 1;
 	}
+
 
 	App *app = new App(display, debugDisplay);
 	int result = app->Run();
