@@ -20,7 +20,7 @@ class Utils
 {
 public:
 	static bool SafeVidCapOpen(VideoCapture& videoCapture, const string& target);
-	static Point& GetCenterOfMat(Mat& mat);
+	static Point GetCenterOfMat(Mat& mat);
 };
 
 struct UpdaterStruct

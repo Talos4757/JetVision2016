@@ -7,10 +7,10 @@
 
 #include "Utils.h"
 
-Point& Utils::GetCenterOfMat(Mat& mat)
+Point Utils::GetCenterOfMat(Mat& mat)
 {
 	Size s = mat.size();
-	return *(new Point(s.width / 2, s.height / 2));
+	return Point(s.width / 2, s.height / 2);
 }
 
 bool Utils::SafeVidCapOpen(VideoCapture& videoCapture, const string& target)

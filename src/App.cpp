@@ -118,6 +118,8 @@ int App::Run()
 	void* threadRet;
 	pthread_join(*this->updaterThread, &threadRet);
 
+	delete image;
+
 	return 0;
 }
 
@@ -157,20 +159,19 @@ void* App::ReadFrameAsync(void *arg)
 
 Mat& App::FindTargets(Mat& src)
 {
-	vector<vector<Point> > *contours = new vector<vector<Point> >();
-	findContours(src, *contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
+	vector<vector<Point> > contours;
+	findContours(src, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 
 	int i = 0;
-	for(vector<vector<Point> >::iterator it = contours->begin(); it != contours->end(); ++it, ++i)
+	for(vector<vector<Point> >::iterator it = contours.begin(); it != contours.end(); ++it, ++i)
 	{
 		if(*this->debugDisplay)
 		{
-			drawContours(src, *contours, i, Scalar(255,0,0));
+			drawContours(src, contours, i, Scalar(255,0,0));
 			imshow("FindTargets output", src);
 		}
 	}
 
-	delete contours;
 	return src;
 }
 

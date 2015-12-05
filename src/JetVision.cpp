@@ -5,6 +5,8 @@ int main(int argc, char* argv[])
 	bool display = false;
 	bool debugDisplay = false;
 
+	bool earlyReturn = false;
+
 	if(argc > 1)
 	{
 		for(int i = 1; i < argc; i++)
@@ -17,7 +19,17 @@ int main(int argc, char* argv[])
 			{
 				debugDisplay = true;
 			}
+			else
+			{
+				cout << "Unrecognized parameter: " << string(argv[i]) << endl;
+				earlyReturn = true;
+			}
 		}
+	}
+
+	if(earlyReturn)
+	{
+		return 1;
 	}
 
 	App *app = new App(display, debugDisplay);
