@@ -9,6 +9,7 @@
 #define UTILS_H_
 
 #include <stdio.h>
+#include <string>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
