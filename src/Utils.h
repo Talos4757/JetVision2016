@@ -25,10 +25,10 @@ public:
 
 struct UpdaterStruct
 {
-    VideoCapture *vidCap;
-    Mat *frame;
-    pthread_mutex_t *frameLocker;
-    string* streamAddress;
+	VideoCapture *vidCap;
+	Mat *frame;
+	pthread_mutex_t *frameLocker;
+	string* streamAddress;
 };
 
 #endif /* UTILS_H_ */
