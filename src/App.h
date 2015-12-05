@@ -34,7 +34,7 @@ using namespace cv;
 class App
 {
 public:
-	App(bool display, bool debugDisplay);
+	App(bool& display, bool& debugDisplay);
 	~App();
 	int Run();
 
@@ -43,8 +43,8 @@ private:
 	Mat& PrepareFrame(Mat& src);
 	Mat& FindTargets(Mat& src);
 
-	bool display, debugDisplay;
-	string videoStreamAddress;
+	bool *display, *debugDisplay;
+	string *videoStreamAddress;
 	Mat *dummyMat, *targetDraw, *criticalFrame;
 	cuda::GpuMat *raw, *channels, *dst;
 	VideoCapture *videoCapture;

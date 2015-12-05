@@ -7,12 +7,12 @@
 
 #include "App.h"
 
-App::App(bool display, bool debugDisplay)
+App::App(bool& display, bool& debugDisplay)
 {
-	this->display = display;
-	this->debugDisplay = debugDisplay;
+	this->display = &display;
+	this->debugDisplay = &debugDisplay;
 
-	this->videoStreamAddress =  "http://root:toor@10.0.0.12/mjpg/video.mjpg";
+	this->videoStreamAddress = new string("http://root:toor@10.0.0.12/mjpg/video.mjpg");
 
 	this->videoCapture = new VideoCapture();
 	this->dummyMat = new Mat();
@@ -29,15 +29,16 @@ App::App(bool display, bool debugDisplay)
 
 App::~App()
 {
-	delete this->videoCapture;
-	delete[] this->channels;
-	delete this->raw;
-	delete this->dst;
+	delete this->videoStreamAddress;
 	delete this->dummyMat;
 	delete this->targetDraw;
-	delete this->updaterThread;
 	delete this->criticalFrame;
+	delete this->raw;
+	delete[] this->channels;
+	delete this->dst;
+	delete this->videoCapture;
 	delete this->frameLocker;
+	delete this->updaterThread;
 }
 
 int App::Run()
@@ -48,11 +49,13 @@ int App::Run()
 
 	Mat *image = new Mat();
 
+	bool stopCamera = false;
 	UpdaterStruct info;
 	info.frame = this->criticalFrame;
 	info.frameLocker = this->frameLocker;
-	info.streamAddress = &this->videoStreamAddress;
+	info.streamAddress = this->videoStreamAddress;
 	info.vidCap = this->videoCapture;
+	info.stopFlag = &stopCamera;
 
 	pthread_create(this->updaterThread, NULL, App::ReadFrameAsync, (void*)&info);
 
@@ -85,10 +88,15 @@ int App::Run()
 			}
 		}
 
+		if(*this->debugDisplay)
+		{
+			imshow("Raw image", *image);
+		}
+
 		*image = this->PrepareFrame(*image);
 		*image = this->FindTargets(*image);
 
-		if(this->display)
+		if(*this->display)
 		{
 			imshow("Output Window", *image);
 		}
@@ -102,10 +110,14 @@ int App::Run()
 		 elapsed = current.tv_sec * NANOS + current.tv_nsec - start;
 		 fps = 1 / (elapsed / NRATIO);
 		 cerr << "\rMain thread: " <<  fps  << " FPS";
-
 	}
 
 	cerr << "" << endl;
+
+	stopCamera = true;
+	void* threadRet;
+	pthread_join(*this->updaterThread, &threadRet);
+
 	return 0;
 }
 
@@ -113,11 +125,13 @@ void* App::ReadFrameAsync(void *arg)
 {
 	cerr << "Async reader: Starting..." << endl;
 
-	 UpdaterStruct *info = (UpdaterStruct*) arg;
-	 Mat *criticalFrame = info->frame;
-	 VideoCapture *vidCap = info->vidCap;
-	 pthread_mutex_t *locker = info->frameLocker;
+	 UpdaterStruct* info = (UpdaterStruct*) arg;
+
+	 Mat* criticalFrame = info->frame;
+	 VideoCapture* vidCap = info->vidCap;
+	 pthread_mutex_t* locker = info->frameLocker;
 	 string* streamAddress = info->streamAddress;
+	 volatile bool* stopFlag = info->stopFlag;
 
 	if(!Utils::SafeVidCapOpen(*vidCap, *streamAddress))
 	{
@@ -129,7 +143,7 @@ void* App::ReadFrameAsync(void *arg)
 
 	Mat rawImage;
 
-	while(true)
+	while(!*stopFlag)
 	{
 		vidCap->read(rawImage);
 
@@ -144,15 +158,15 @@ void* App::ReadFrameAsync(void *arg)
 Mat& App::FindTargets(Mat& src)
 {
 	vector<vector<Point> > *contours = new vector<vector<Point> >();
-	cv::findContours(src, *contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
+	findContours(src, *contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 
 	int i = 0;
 	for(vector<vector<Point> >::iterator it = contours->begin(); it != contours->end(); ++it, ++i)
 	{
-		if(this->debugDisplay)
+		if(*this->debugDisplay)
 		{
-			cv::drawContours(src, *contours, i, Scalar(255,0,0));
-			cv::imshow("FindTargets output", src);
+			drawContours(src, *contours, i, Scalar(255,0,0));
+			imshow("FindTargets output", src);
 		}
 	}
 
@@ -187,7 +201,7 @@ Mat& App::PrepareFrame(Mat &src)
 
 	this->dst->download(src);
 
-	if(this->debugDisplay)
+	if(*this->debugDisplay)
 	{
 		imshow("PrepareFrame result", src);
 	}

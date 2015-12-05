@@ -29,6 +29,7 @@ struct UpdaterStruct
 	Mat *frame;
 	pthread_mutex_t *frameLocker;
 	string* streamAddress;
+	volatile bool* stopFlag;
 };
 
 #endif /* UTILS_H_ */
