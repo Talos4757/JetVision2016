@@ -8,8 +8,7 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-#include <stdio.h>
-#include <string>
+#include <iostream>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>

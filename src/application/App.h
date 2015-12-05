@@ -8,7 +8,7 @@
 #ifndef APP_H_
 #define APP_H_
 
-#include <stdio.h>
+#include <iostream>
 #include <ctime>
 #include <vector>
 #include <pthread.h>
