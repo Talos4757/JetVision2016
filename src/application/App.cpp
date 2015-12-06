@@ -49,7 +49,7 @@ int App::Run(atomic<bool> &stopAppRun)
 
 	JetServer::StartServer(NULL, NULL);
 
-	Mat image = new Mat();
+	Mat image;
 
 	bool stopCamera = false;
 	UpdaterStruct info;
@@ -69,10 +69,10 @@ int App::Run(atomic<bool> &stopAppRun)
 		start = begin.tv_sec * NANOS + begin.tv_nsec;
 
 		pthread_mutex_lock(this->frameLocker);
-		this->criticalFrame->copyTo(*image);
+		this->criticalFrame->copyTo(image);
 		pthread_mutex_unlock(this->frameLocker);
 
-		if(image->empty())
+		if(image.empty())
 		{
 			if(!notifiedWaiting)
 			{
@@ -92,15 +92,15 @@ int App::Run(atomic<bool> &stopAppRun)
 
 		if(*this->debugDisplay)
 		{
-			imshow("Raw image", *image);
+			imshow("Raw image", image);
 		}
 
-		*image = this->PrepareFrame(*image);
-		*image = this->FindTargets(*image);
+		image = this->PrepareFrame(image);
+		image = this->FindTargets(image);
 
 		if(*this->display)
 		{
-			imshow("Output Window", *image);
+			imshow("Output Window", image);
 		}
 
 		if(cv::waitKey(1) >= 0)
@@ -122,8 +122,6 @@ int App::Run(atomic<bool> &stopAppRun)
 	stopCamera = true;
 	void* threadRet;
 	pthread_join(*this->updaterThread, &threadRet);
-
-	delete image;
 
 	return 0;
 }
