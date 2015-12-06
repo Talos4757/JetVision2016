@@ -43,10 +43,6 @@ App::~App()
 
 int App::Run(atomic<bool> &stopAppRun)
 {
-	double fps;
-	long long start, elapsed;
-	struct timespec begin, current;
-
 	JetServer::StartServer(NULL, NULL);
 
 	Mat image;
@@ -61,6 +57,14 @@ int App::Run(atomic<bool> &stopAppRun)
 
 	pthread_create(this->updaterThread, NULL, App::ReadFrameAsync, (void*)&info);
 
+	double fps, avgFps;
+	long long start, elapsed, appStartNanos, appElapsedNanos;
+	struct timespec begin, current, appStart;
+
+	clock_gettime(USED_CLOCK, &appStart);
+	appStartNanos = appStart.tv_sec * NANOS + begin.tv_nsec;
+	long long framesCount = 0;
+	
 	bool notifiedWaiting = false;
 
 	while(!stopAppRun)
@@ -107,11 +111,16 @@ int App::Run(atomic<bool> &stopAppRun)
 		{
 			break;
 		}
+		
+		framesCount++;
 
-		 clock_gettime(USED_CLOCK, &current);
-		 elapsed = current.tv_sec * NANOS + current.tv_nsec - start;
-		 fps = 1 / (elapsed / NRATIO);
-		 cerr << "\rMain thread: " <<  fps  << " FPS";
+		clock_gettime(USED_CLOCK, &current);
+		elapsed = current.tv_sec * NANOS + current.tv_nsec - start;
+		appElapsedNanos = current.tv_sec * NANOS + current.tv_nsec - appStartNanos;		
+	
+		fps = 1 / (elapsed / NRATIO);
+		avgFps = framesCount / (appElapsedNanos / NRATIO);
+		cerr << "\rMain thread: " <<  fps  << " FPS" << "| Avg. " << avgFps;
 	}
 
 	cerr << "" << endl;
