@@ -1,7 +1,26 @@
+#include <signal.h>
+#include <cstring>
+#include <atomic>
+
 #include "application/App.h"
+
+using namespace std;
+
+atomic<bool> quit = {false};
+
+void gotSignal(int)
+{
+    quit = true;
+}
 
 int main(int argc, char* argv[])
 {
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = gotSignal;
+	sigfillset(&sa.sa_mask);
+	sigaction(SIGINT,&sa,NULL);
+
 	bool display = false;
 	bool debugDisplay = false;
 
@@ -34,7 +53,7 @@ int main(int argc, char* argv[])
 
 
 	App *app = new App(display, debugDisplay);
-	int result = app->Run();
+	int result = app->Run(quit);
 	delete app;
 
 	return result;

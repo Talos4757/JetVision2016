@@ -12,6 +12,7 @@
 #include <ctime>
 #include <vector>
 #include <pthread.h>
+#include <atomic>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -38,7 +39,7 @@ class App
 public:
 	App(bool& display, bool& debugDisplay);
 	~App();
-	int Run();
+	int Run(atomic<bool> &stopAppRun);
 
 private:
 	static void* ReadFrameAsync(void* arg);

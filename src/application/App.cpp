@@ -41,7 +41,7 @@ App::~App()
 	delete this->updaterThread;
 }
 
-int App::Run()
+int App::Run(atomic<bool> &stopAppRun)
 {
 	double fps;
 	long long start, elapsed;
@@ -49,7 +49,7 @@ int App::Run()
 
 	JetServer::StartServer(NULL, NULL);
 
-	Mat *image = new Mat();
+	Mat image = new Mat();
 
 	bool stopCamera = false;
 	UpdaterStruct info;
@@ -63,7 +63,7 @@ int App::Run()
 
 	bool notifiedWaiting = false;
 
-	while(true)
+	while(!stopAppRun)
 	{
 		clock_gettime(USED_CLOCK, &begin);
 		start = begin.tv_sec * NANOS + begin.tv_nsec;
@@ -159,8 +159,13 @@ void* App::ReadFrameAsync(void *arg)
 		pthread_mutex_unlock(locker);
 	}
 
+	vidCap->release();
+
+	cerr << "Async reader: Terminating" << endl;
 	return (void*)0;
 }
+
+
 
 Mat& App::FindTargets(Mat& src)
 {
