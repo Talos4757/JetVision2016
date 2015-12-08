@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <string>
 
+#include "../types/TargetType.h"
+
 using namespace std;
 
 class Target
@@ -18,7 +20,14 @@ class Target
 public:
 	Target();
 	virtual ~Target();
-	string Serialize();
+	char* Serialize();
+
+	TargetType type;
+	double distance;
+	double horizontalAngle;
+	double verticalAngle;
 };
+
+#define TARGET_SIZE (sizeof(int) + 3*sizeof(double))
 
 #endif /* TARGET_H_ */

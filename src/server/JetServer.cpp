@@ -9,22 +9,38 @@
 
 JetServer *JetServer::server = NULL;
 pthread_t *JetServer::serverThread = NULL;
+bool JetServer::retriedInit = false;
 
-void JetServer::StartServer(vector<Target*> *targets, pthread_mutex_t *targetLocker)
+void JetServer::StartServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port)
 {
 	if(JetServer::server == NULL && JetServer::serverThread == NULL)
 	{
-		JetServer *server = new JetServer(targets, targetLocker);
+		JetServer::server = new JetServer(targets, targetLocker, port);
+		JetServer::serverThread = new pthread_t();
 
-		pthread_t *serverThread = new pthread_t();
-		pthread_create(serverThread, NULL, JetServer::_ListenAsync, (void*)server);
+		if(JetServer::server->isInited)
+		{
+			pthread_create(serverThread, NULL, JetServer::_ListenAsync, (void*)	JetServer::server);
+		}
+		else
+		{
+			cerr << "StartServer(): Server failed to init, not starting" << endl;
 
-		JetServer::server = server;
-		JetServer::serverThread = serverThread;
+			if(!JetServer::retriedInit)
+			{
+				cerr << "StartServer(): Retrying to init" << endl;
+				JetServer::retriedInit = true;
+
+				delete JetServer::server;
+				delete JetServer::serverThread;
+
+				JetServer::StartServer(targets, targetLocker, port);
+			}
+		}
 	}
 	else
 	{
-		cerr << "StartServer: Server already started..." << endl;
+		cerr << "StartServer(): Server already started..." << endl;
 	}
 }
 
@@ -45,37 +61,41 @@ void* JetServer::_ListenAsync(void* arg)
 
 	try
 	{
-		return (void*)(server->Listen());
+		server->Listen();
 	}
-	catch (...)
+	catch (abi::__forced_unwind&)
 	{
-		close(*server->serverSocket);
-		cerr << "Async server wrapper: caught exception, closed socket. bye bye! (on " << pthread_self() << ")" << endl;
+		cerr <<  "Server: Thread terminated, closing..." << endl;
 		throw;
 	}
 
 	return 0;
 }
 
-JetServer::JetServer(vector<Target*> *targetsref, pthread_mutex_t *targetLocker)
-	:targets(*targetsref),
-	 targetLocker(*targetLocker)
+JetServer::JetServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port)
+	:targets(targets),
+	 targetLocker(targetLocker)
 {
-	this->serverSocket = new int(0);
-	this->acpSocket = new int(0);
+	this->port = port;
+	this->targets = targets;
+	this->targetLocker = targetLocker;
+	this->isInited = false;
+	this->serverSocket = 0;
+	this->rioSocket = 0;
 	this->Init();
 }
 
 JetServer::~JetServer()
 {
-	delete this->serverSocket;
-	delete this->acpSocket;
+	close(this->serverSocket);
+	close(this->rioSocket);
+	cerr << "Server destructor: closed all resources." << endl;
 }
 
 int JetServer::Init()
 {
-	this->serverSocket = new int(socket(AF_INET, SOCK_STREAM, 0));
-	if(*this->serverSocket < 0)
+	this->serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+	if(this->serverSocket < 0)
 	{
 		cerr << "Server: Could not create socket! Errno: " << errno << endl;
 		return 1;
@@ -83,37 +103,120 @@ int JetServer::Init()
 
 	struct sockaddr_in sa;
 	sa.sin_family = AF_INET;
-	sa.sin_port = htons(SERVER_PORT);
+	sa.sin_port = htons(this->port);
 	sa.sin_addr.s_addr = INADDR_ANY;
 
-	if(bind(*this->serverSocket, (struct sockaddr *)&sa, sizeof(sa)) != 0)
+	if(bind(this->serverSocket, (struct sockaddr *)&sa, sizeof(sa)) != 0)
 	{
-		cerr << "Server: Could not bind socket on port " << SERVER_PORT << ". Errno: " << errno << endl;
+		cerr << "Server: Could not bind socket on port " << this->port << ". Errno: " << errno << endl;
 		return 1;
 	}
 
-	cout << "Server: Server active on port " << SERVER_PORT << endl;
+	cout << "Server: Server active on port " << this->port << endl;
+	this->isInited = true;
 
 	return 0;
 }
 
 int JetServer::Listen()
 {
-	cerr << "Server: Listening for incoming requests.." << endl;
-
-	if(listen(*this->serverSocket, 6) < 0)
+	if(this->isInited)
 	{
-		cerr << "Server: Listening failed!" << endl;
-		return 1;
+		cerr << "Server: Listening.." << endl;
+
+		if(listen(this->serverSocket, 6) < 0)
+		{
+			cerr << "Server: Listening failed!" << endl;
+			return 1;
+		}
+		else
+		{
+			struct sockaddr sar;
+			memset(&sar, 0, sizeof(sar));
+			socklen_t st;
+			memset(&st, 0, sizeof(st));
+
+			cerr << "Server: Waiting for connection..." << endl;
+			this->rioSocket = accept(this->serverSocket, &sar, &st);
+
+			if(this->rioSocket < 0)
+			{
+				cerr << "Server: Error connecting" << endl;
+			}
+			else
+			{
+				cerr << "Server: Connected!" << endl;
+				this->HandleRequests();
+			}
+		}
+
+		return 0;
 	}
 	else
 	{
-		struct sockaddr sar;
-		socklen_t st;
+		cerr << "Server: I'm not inited! cannot listen." << endl;
+		return 1;
+	}
+}
 
-		this->acpSocket = new int(accept(*this->serverSocket, &sar, &st));
-		cerr << "Server: Connected!" << endl;
+void JetServer::HandleRequests()
+{
+	cerr << "Server: connected and waiting for client request" << endl;
+
+	while(true)
+	{
+		char buffer[sizeof(RequestType)];
+
+		recv(this->rioSocket, buffer, sizeof(RequestType), 0);
+
+		RequestType rt = *(RequestType*)buffer;
+
+		if(rt == TargetReq)
+		{
+			if(this->SendTargets())
+			{
+				cerr << "Server: Targets sent successfully" << endl;
+			}
+			else
+			{
+				cerr << "Server: error sending targets" << endl;
+			}
+		}
+	}
+}
+
+bool JetServer::SendTargets()
+{
+	cerr << "Server: attempting to send targets..." << endl;
+
+	vector<Target> targetsCopy;
+
+	pthread_mutex_lock(&this->targetLocker);
+	targetsCopy = vector<Target>(this->targets);
+	pthread_mutex_unlock(&this->targetLocker);
+
+	int targetCount = targetsCopy.size();
+
+	 if(send(this->rioSocket,(void*)&targetCount, sizeof(int), 0) == -1)
+	 {
+		 cout <<  "Server: failed to send targets count header. Errno: " << errno << endl;
+		 return false;
+	 }
+
+	for(int i = 0; i < targetCount; i++)
+	{
+		char* encodedTarget = targetsCopy[i].Serialize();
+
+		if(send(this->rioSocket, encodedTarget, TARGET_SIZE, 0) == -1)
+		{
+			return false;
+		}
+
+		delete[] encodedTarget;
 	}
 
-	return 0;
+	cerr << "Server: sent " << targetCount << " targets" << endl;
+	return true;
 }
+
+
