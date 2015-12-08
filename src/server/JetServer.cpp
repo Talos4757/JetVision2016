@@ -172,23 +172,51 @@ void JetServer::HandleRequests()
 
 	while(true)
 	{
-		memset(&buffer, 0, sizeof(buffer));
-		recv(this->rioSocket, buffer, sizeof(RequestType), 0);
-
-		RequestType rt = *(RequestType*)buffer;
-
-		if(rt == TargetReq)
+		int len = recv(this->rioSocket, buffer, sizeof(RequestType), 0);
+		if(len > 0)
 		{
-			if(this->SendTargets())
+			RequestType rt = *(RequestType*)buffer;
+
+			switch(rt)
 			{
-				cerr << "Server: Targets sent successfully" << endl;
-			}
-			else
-			{
-				cerr << "Server: error sending targets" << endl;
+				case TargetReq:
+					if(this->SendTargets())
+					{
+						cerr << "Server: Targets sent successfully" << endl;
+					}
+					else
+					{
+						cerr << "Server: error sending targets" << endl;
+					}
+					break;
+				/*
+				 * Add other cases here...
+				 */
+				default:
+					cerr << "Server: Unrecognized request number:" <<  rt << endl;
+					this->SendInvalidRequestResponse();
+					break;
 			}
 		}
+		if(len < 0)
+		{
+			this->Listen();
+		}
 	}
+}
+
+bool JetServer::SendInvalidRequestResponse()
+{
+	int value = -1;
+	if(send(this->rioSocket,(void*)&value, sizeof(int), 0) == -1)
+	{
+		 cout <<  "Server: failed to send invalid request response. Errno: " << errno << endl;
+		 return false;
+	}
+
+	cout <<  "Server: sent invalid request response" << endl;
+
+	return true;
 }
 
 bool JetServer::SendTargets()

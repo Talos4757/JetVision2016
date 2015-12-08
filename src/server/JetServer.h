@@ -43,6 +43,7 @@ private:
 	int Listen();
 	void HandleRequests();
 	bool SendTargets();
+	bool SendInvalidRequestResponse();
 
 	static JetServer *server;
 	static pthread_t *serverThread;

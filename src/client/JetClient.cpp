@@ -172,6 +172,13 @@ void* JetClient::Query(RequestType type)
 		recv(this->clientSocket, buffer, sizeof(RequestType), 0);
 		int count = *(int*)buffer;
 
+		if(count == -1)
+		{
+			//error
+			cerr << "Client: Got error -1 from server" << endl;
+			return (void*)NULL;
+		}
+
 		vector<Target> *targets = new vector<Target>();
 		char targetBuffer[TARGET_SIZE];
 		for(int i = 0; i < count; i++)
