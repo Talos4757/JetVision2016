@@ -198,8 +198,9 @@ void JetServer::HandleRequests()
 					break;
 			}
 		}
-		if(len < 0)
+		else
 		{
+			//connection closed!
 			this->Listen();
 		}
 	}
