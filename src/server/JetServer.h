@@ -33,6 +33,7 @@ class JetServer
 {
 public:
 	static void StartServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port);
+	static void CloseServer();
 	static void CloseServer(void** ret);
 private:
 	JetServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port);
@@ -45,7 +46,8 @@ private:
 
 	static JetServer *server;
 	static pthread_t *serverThread;
-	static bool retriedInit;
+	static bool started;
+
 	static void* _ListenAsync(void* arg);
 
 	vector<Target> &targets;

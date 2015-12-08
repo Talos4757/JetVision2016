@@ -9,33 +9,26 @@
 
 JetServer *JetServer::server = NULL;
 pthread_t *JetServer::serverThread = NULL;
-bool JetServer::retriedInit = false;
+bool JetServer::started = false;
 
 void JetServer::StartServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port)
 {
-	if(JetServer::server == NULL && JetServer::serverThread == NULL)
+	if(!JetServer::started)
 	{
-		JetServer::server = new JetServer(targets, targetLocker, port);
-		JetServer::serverThread = new pthread_t();
+		JetServer *aserver = new JetServer(targets, targetLocker, port);
 
-		if(JetServer::server->isInited)
+		if(aserver->isInited)
 		{
+			JetServer::server = aserver;
+			JetServer::serverThread = new pthread_t();
 			pthread_create(serverThread, NULL, JetServer::_ListenAsync, (void*)	JetServer::server);
+
+			JetServer::started = true;
 		}
 		else
 		{
-			cerr << "StartServer(): Server failed to init, not starting" << endl;
-
-			if(!JetServer::retriedInit)
-			{
-				cerr << "StartServer(): Retrying to init" << endl;
-				JetServer::retriedInit = true;
-
-				delete JetServer::server;
-				delete JetServer::serverThread;
-
-				JetServer::StartServer(targets, targetLocker, port);
-			}
+			cerr << "StartServer(): Server failed to init!" << endl;
+			delete aserver;
 		}
 	}
 	else
@@ -44,13 +37,23 @@ void JetServer::StartServer(vector<Target> &targets, pthread_mutex_t &targetLock
 	}
 }
 
+void JetServer::CloseServer()
+{
+	JetServer::CloseServer(NULL);
+}
+
 void JetServer::CloseServer(void** ret)
 {
-	pthread_cancel(*JetServer::serverThread);
-	pthread_join(*JetServer::serverThread, ret);
+	if(JetServer::started)
+	{
+		pthread_cancel(*JetServer::serverThread);
+		pthread_join(*JetServer::serverThread, ret);
 
-	delete JetServer::server;
-	delete JetServer::serverThread;
+		delete JetServer::server;
+		delete JetServer::serverThread;
+
+		JetServer::started = false;
+	}
 
 	cerr << "Server closer: Success" << endl;
 }
@@ -89,12 +92,14 @@ JetServer::~JetServer()
 {
 	close(this->serverSocket);
 	close(this->rioSocket);
-	cerr << "Server destructor: closed all resources." << endl;
 }
 
 int JetServer::Init()
 {
 	this->serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+	int optval = 1;
+	setsockopt(this->serverSocket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
 	if(this->serverSocket < 0)
 	{
 		cerr << "Server: Could not create socket! Errno: " << errno << endl;
@@ -163,10 +168,11 @@ void JetServer::HandleRequests()
 {
 	cerr << "Server: connected and waiting for client request" << endl;
 
+	char buffer[sizeof(RequestType)];
+
 	while(true)
 	{
-		char buffer[sizeof(RequestType)];
-
+		memset(&buffer, 0, sizeof(buffer));
 		recv(this->rioSocket, buffer, sizeof(RequestType), 0);
 
 		RequestType rt = *(RequestType*)buffer;

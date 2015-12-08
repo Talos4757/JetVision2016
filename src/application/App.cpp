@@ -43,7 +43,11 @@ App::~App()
 
 int App::Run(atomic<bool> &stopAppRun)
 {
-	JetServer::StartServer(NULL, NULL);
+	vector<Target> targets;
+	pthread_mutex_t targetsLocker;
+	pthread_mutex_init(&targetsLocker, NULL);
+
+	JetServer::StartServer(targets, targetsLocker, 5555);
 
 	Mat image;
 
@@ -123,10 +127,9 @@ int App::Run(atomic<bool> &stopAppRun)
 		cerr << "\rMain thread: " <<  fps  << " FPS" << "| Avg. " << avgFps;
 	}
 
-	cerr << "" << endl;
+	cerr << endl;
 
-	void* jetret;
-	JetServer::CloseServer(&jetret);
+	JetServer::CloseServer();
 
 	stopCamera = true;
 	void* threadRet;

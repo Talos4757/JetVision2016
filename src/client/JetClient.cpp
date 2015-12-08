@@ -9,16 +9,21 @@
 
 JetClient *JetClient::client = NULL;
 pthread_t *JetClient::clientThread = NULL;
+bool JetClient::isStarted = false;
 
-void JetClient::StartClient(int port)
+void JetClient::StartClient(int port, int serverPort, string serverAddress)
 {
-	if(JetClient::client == NULL && JetClient::clientThread == NULL)
+	if(!JetClient::isStarted)
 	{
 		cerr << "Client: Starting..." << endl;
-		JetClient::client = new JetClient(port);
+
+		JetClient *aclient = new JetClient(port, serverPort, serverAddress);
 		JetClient::clientThread = new pthread_t();
 
-		pthread_create(JetClient::clientThread, NULL, _StartAsync, (void*)JetClient::client);
+		pthread_create(JetClient::clientThread, NULL, _StartAsync, (void*)aclient);
+
+		JetClient::client = aclient;
+		JetClient::isStarted = true;
 	}
 	else
 	{
@@ -26,13 +31,23 @@ void JetClient::StartClient(int port)
 	}
 }
 
+void JetClient::CloseClient()
+{
+	JetClient::CloseClient(NULL);
+}
+
 void JetClient::CloseClient(void* ret)
 {
-	pthread_cancel(*JetClient::clientThread);
-	pthread_join(*JetClient::clientThread, &ret);
+	if(JetClient::isStarted)
+	{
+		pthread_cancel(*JetClient::clientThread);
+		pthread_join(*JetClient::clientThread, &ret);
 
-	delete JetClient::client;
-	delete JetClient::clientThread;
+		delete JetClient::client;
+		delete JetClient::clientThread;
+
+		JetClient::isStarted = false;
+	}
 
 	cerr << "Client closer: Success" << endl;
 }
@@ -54,12 +69,15 @@ void* JetClient::_StartAsync(void* arg)
 	return NULL;
 }
 
-JetClient::JetClient(int port)
+JetClient::JetClient(int port, int serverPort, string serverAddress)
 {
 	this->port = port;
 	this->clientSocket = 0;
+	this->connectRetryCount = 0;
+	this->isInited = false;
 	this->isConnected = false;
-	this->isErrored = false;
+	this->serverPort = serverPort;
+	this->serverAddress = serverAddress;
 	this->Init();
 }
 
@@ -71,6 +89,10 @@ JetClient::~JetClient()
 int JetClient::Init()
 {
 	this->clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+	int optval = 1;
+	setsockopt(this->clientSocket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+
 	if(this->clientSocket < 0)
 	{
 		cerr << "Client: Could not create socket! Errno: " << errno << endl;
@@ -88,9 +110,10 @@ int JetClient::Init()
 		return 1;
 	}
 
+	this->isInited = true;
 	cerr << "Client: Client active on port " << this->port << endl;
 
-	return this->Connect();
+	return 0;
 }
 
 int JetClient::Connect()
@@ -99,23 +122,32 @@ int JetClient::Connect()
 
 	struct sockaddr_in sa;
 	sa.sin_family = AF_INET;
-	sa.sin_port = htons(SERVER_PORT);
-	sa.sin_addr.s_addr = inet_addr(SERVER_IP);
+	sa.sin_port = htons(this->serverPort);
+	sa.sin_addr.s_addr = inet_addr(&this->serverAddress[0]);
 
 	bool notified = false;
-	while(connect(this->clientSocket,(struct sockaddr*)&sa, sizeof(sa)) != 0)
+	while(connect(this->clientSocket,(struct sockaddr*)&sa, sizeof(sa)) < 0)
 	{
 		if(!notified)
 		{
 			cerr << "Client: failed to connect to the server. Errno: " << errno << endl;
 			notified = true;
 		}
+
+		if(this->connectRetryCount > MAX_CONNECT_RETRIES)
+		{
+			cerr << "Client: Max connect retries exceeded" << endl;
+
+			return 1;
+		}
+
+		//sleep(1); // wait one second, maybe the server will init..
+		this->connectRetryCount++;
 	}
 
 	cerr << "Client: connected to server!" << endl;
-
 	this->isConnected = true;
-	this->isErrored = false;
+
 	return 0;
 }
 
@@ -126,7 +158,7 @@ vector<Target>* JetClient::GetTargets()
 
 void* JetClient::Query(RequestType type)
 {
-	if(this->isConnected && !this->isErrored)
+	if(this->isInited && this->isConnected)
 	{
 		if(send(this->clientSocket, &type, sizeof(type), 0) < 0)
 		{
