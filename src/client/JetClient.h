@@ -28,19 +28,21 @@
 
 #define MAX_CONNECT_RETRIES 5
 
-class JetClient {
+class JetClient
+{
 public:
 	static void StartClient(int port, int serverPort, string serverAddress);
 	static void CloseClient();
 	static void CloseClient(void* ret);
 	static vector<Target>* GetTargets();
+
 private:
 	JetClient(int port, int serverPort, string serverAddress);
 	virtual ~JetClient();
 
 	int Init();
 	int Connect();
-	void* Query(RequestType type);
+	int Query(RequestType type);
 
 	static bool isStarted;
 	static JetClient *client;

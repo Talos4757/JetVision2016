@@ -127,46 +127,48 @@ int JetServer::Listen()
 {
 	if(this->isInited)
 	{
-		cerr << "Server: Listening.." << endl;
-
-		if(listen(this->serverSocket, 6) < 0)
+		while(true)
 		{
-			cerr << "Server: Listening failed!" << endl;
-			return 1;
-		}
-		else
-		{
-			struct sockaddr sar;
-			memset(&sar, 0, sizeof(sar));
-			socklen_t st;
-			memset(&st, 0, sizeof(st));
+			cerr << "Server: Listening.." << endl;
 
-			cerr << "Server: Waiting for connection..." << endl;
-			this->rioSocket = accept(this->serverSocket, &sar, &st);
-
-			if(this->rioSocket < 0)
+			if(listen(this->serverSocket, 2) < 0)
 			{
-				cerr << "Server: Error connecting" << endl;
+				cerr << "Server: Listening failed!" << endl;
+				return 1;
 			}
 			else
 			{
-				cerr << "Server: Connected!" << endl;
-				this->HandleRequests();
+				struct sockaddr sar;
+				memset(&sar, 0, sizeof(sar));
+				socklen_t st;
+				memset(&st, 0, sizeof(st));
+
+				cerr << "Server: Waiting for connection..." << endl;
+				this->rioSocket = accept(this->serverSocket, &sar, &st);
+
+				if(this->rioSocket < 0)
+				{
+					cerr << "Server: Error connecting" << endl;
+				}
+				else
+				{
+					cerr << "Server: Connected!" << endl;
+					this->HandleRequests();
+					cerr << "Server: Back to listen loop" << endl;
+				}
 			}
 		}
-
-		return 0;
 	}
 	else
 	{
-		cerr << "Server: I'm not inited! cannot listen." << endl;
+		cerr << "Server: Not initialized, cannot listen" << endl;
 		return 1;
 	}
 }
 
 void JetServer::HandleRequests()
 {
-	cerr << "Server: connected and waiting for client request" << endl;
+	cerr << "Server: Connected and waiting for client request" << endl;
 
 	char buffer[sizeof(RequestType)];
 
@@ -186,7 +188,7 @@ void JetServer::HandleRequests()
 					}
 					else
 					{
-						cerr << "Server: error sending targets" << endl;
+						cerr << "Server: Error sending targets" << endl;
 					}
 					break;
 				/*
@@ -200,8 +202,8 @@ void JetServer::HandleRequests()
 		}
 		else
 		{
-			//connection closed!
-			this->Listen();
+			cerr << "Server: Client disconnected" << endl;
+			break;
 		}
 	}
 }
@@ -211,18 +213,18 @@ bool JetServer::SendInvalidRequestResponse()
 	int value = -1;
 	if(send(this->rioSocket,(void*)&value, sizeof(int), 0) == -1)
 	{
-		 cout <<  "Server: failed to send invalid request response. Errno: " << errno << endl;
+		 cout <<  "Server: Failed to send invalid request response. Errno: " << errno << endl;
 		 return false;
 	}
 
-	cout <<  "Server: sent invalid request response" << endl;
+	cout <<  "Server: Sent invalid request response" << endl;
 
 	return true;
 }
 
 bool JetServer::SendTargets()
 {
-	cerr << "Server: attempting to send targets..." << endl;
+	cerr << "Server: Attempting to send targets..." << endl;
 
 	vector<Target> targetsCopy;
 
@@ -234,7 +236,7 @@ bool JetServer::SendTargets()
 
 	 if(send(this->rioSocket,(void*)&targetCount, sizeof(int), 0) == -1)
 	 {
-		 cout <<  "Server: failed to send targets count header. Errno: " << errno << endl;
+		 cout <<  "Server: Failed to send targets count header. Errno: " << errno << endl;
 		 return false;
 	 }
 
@@ -250,7 +252,7 @@ bool JetServer::SendTargets()
 		delete[] encodedTarget;
 	}
 
-	cerr << "Server: sent " << targetCount << " targets" << endl;
+	cerr << "Server: Sent " << targetCount << " targets" << endl;
 	return true;
 }
 

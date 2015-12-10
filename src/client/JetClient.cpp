@@ -58,7 +58,7 @@ void* JetClient::_StartAsync(void* arg)
 
 	try
 	{
-		return ((void*)jclient->Connect());
+		jclient->Connect();
 	}
 	catch(abi::__forced_unwind&)
 	{
@@ -130,7 +130,7 @@ int JetClient::Connect()
 	{
 		if(!notified)
 		{
-			cerr << "Client: failed to connect to the server. Errno: " << errno << endl;
+			cerr << "Client: Failed to connect to the server. Errno: " << errno << endl;
 			notified = true;
 		}
 
@@ -145,7 +145,7 @@ int JetClient::Connect()
 		this->connectRetryCount++;
 	}
 
-	cerr << "Client: connected to server!" << endl;
+	cerr << "Client: Connected to server!" << endl;
 	this->isConnected = true;
 
 	return 0;
@@ -153,42 +153,45 @@ int JetClient::Connect()
 
 vector<Target>* JetClient::GetTargets()
 {
-	return (vector<Target>*)JetClient::client->Query(TargetReq);
+	JetClient::client->Query(TargetReq);
+
+	char buffer[sizeof(int)];
+	recv(JetClient::client->clientSocket, buffer, sizeof(int), 0);
+	int count = *(int*)buffer;
+
+	if(count == -1)
+	{
+		//error
+		cerr << "Client: Got error -1 from server" << endl;
+		return NULL;
+	}
+
+	vector<Target> *targets =  new vector<Target>();
+
+	char targetBuffer[TARGET_SIZE];
+	for(int i = 0; i < count; i++)
+	{
+		recv(JetClient::client->clientSocket, targetBuffer, TARGET_SIZE, 0);
+		targets->push_back(*(Target*)targetBuffer);
+	}
+
+	return targets;
 }
 
-void* JetClient::Query(RequestType type)
+int JetClient::Query(RequestType type)
 {
 	if(this->isInited && this->isConnected)
 	{
-		if(send(this->clientSocket, &type, sizeof(type), 0) < 0)
+		if(send(this->clientSocket, &type, sizeof(int), 0) > 0)
 		{
-			cerr << "Client: failed to query server" << endl;
-			return (void*)NULL;
+			cerr << "Client: Queried server, awaiting response" << endl;
+			return 0;
 		}
-
-		cerr << "Client: Queried server, awaiting response" << endl;
-
-		char buffer[sizeof(int)];
-		recv(this->clientSocket, buffer, sizeof(RequestType), 0);
-		int count = *(int*)buffer;
-
-		if(count == -1)
+		else
 		{
-			//error
-			cerr << "Client: Got error -1 from server" << endl;
-			return (void*)NULL;
+			cerr << "Client: Failed to query server" << endl;
 		}
-
-		vector<Target> *targets = new vector<Target>();
-		char targetBuffer[TARGET_SIZE];
-		for(int i = 0; i < count; i++)
-		{
-			recv(this->clientSocket, targetBuffer, TARGET_SIZE, 0);
-			targets->push_back(*(Target*)targetBuffer);
-		}
-
-		return (void*)targets;
 	}
 
-	return (void*)NULL;
+	return -1;
 }
