@@ -37,23 +37,23 @@ using namespace cv;
 class App
 {
 public:
-	App(bool& display, bool& debugDisplay);
-	~App();
-	int Run(atomic<bool> &stopAppRun);
+    App(bool& display, bool& debugDisplay);
+    ~App();
+    int Run(atomic<bool> &stopAppRun);
 
 private:
-	static void* ReadFrameAsync(void* arg);
-	Mat& PrepareFrame(Mat& src);
-	Mat& FindTargets(Mat& src);
+    static void* ReadFrameAsync(void* arg);
+    Mat& PrepareFrame(Mat& src);
+    Mat& FindTargets(Mat& src);
 
-	bool *display, *debugDisplay;
-	string *videoStreamAddress;
-	Mat *dummyMat, *targetDraw, *criticalFrame;
-	cuda::GpuMat *raw, *channels, *dst;
-	VideoCapture *videoCapture;
+    bool *display, *debugDisplay;
+    string *videoStreamAddress;
+    Mat *dummyMat, *targetDraw, *criticalFrame;
+    cuda::GpuMat *raw, *channels, *dst;
+    VideoCapture *videoCapture;
 
-	pthread_mutex_t *frameLocker;
-	pthread_t *updaterThread;
+    pthread_mutex_t *frameLocker;
+    pthread_t *updaterThread;
 };
 
 #endif /* APP_H_ */

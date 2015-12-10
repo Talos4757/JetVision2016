@@ -10,7 +10,7 @@
 
 enum RequestType
 {
-	TargetReq = 1
+    TargetReq = 1
 };
 
 #endif /* TYPES_REQUESTTYPE_H_ */

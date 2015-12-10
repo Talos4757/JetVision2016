@@ -9,27 +9,27 @@
 
 Point Utils::GetCenterOfMat(Mat& mat)
 {
-	Size s = mat.size();
-	return Point(s.width / 2, s.height / 2);
+    Size s = mat.size();
+    return Point(s.width / 2, s.height / 2);
 }
 
 bool Utils::SafeVidCapOpen(VideoCapture& videoCapture, const string& target)
 {
-	bool result;
+    bool result;
 
-	try
-	{
-		Mat *check = new Mat();
-		result = videoCapture.open(target);
-		videoCapture.read(*check);
-		delete check;
-	}
-	catch (...)
-	{
-		result = false;
-	}
+    try
+    {
+        Mat *check = new Mat();
+        result = videoCapture.open(target);
+        videoCapture.read(*check);
+        delete check;
+    }
+    catch (...)
+    {
+        result = false;
+    }
 
-	return result;
+    return result;
 }
 
 

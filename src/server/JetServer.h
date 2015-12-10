@@ -32,34 +32,34 @@ using namespace std;
 class JetServer
 {
 public:
-	static void StartServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port);
-	static void CloseServer();
-	static void CloseServer(void** ret);
+    static void StartServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port);
+    static void CloseServer();
+    static void CloseServer(void** ret);
 private:
-	JetServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port);
-	virtual ~JetServer();
+    JetServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port);
+    virtual ~JetServer();
 
-	int Init();
-	int Listen();
-	void HandleRequests();
-	bool SendTargets();
-	bool SendInvalidRequestResponse();
+    int Init();
+    int Listen();
+    void HandleRequests();
+    bool SendTargets();
+    bool SendInvalidRequestResponse();
 
-	static JetServer *server;
-	static pthread_t *serverThread;
-	static bool started;
+    static JetServer *server;
+    static pthread_t *serverThread;
+    static bool started;
 
-	static void* _ListenAsync(void* arg);
+    static void* _ListenAsync(void* arg);
 
-	vector<Target> &targets;
-	pthread_mutex_t &targetLocker;
+    vector<Target> &targets;
+    pthread_mutex_t &targetLocker;
 
-	int serverSocket;
-	int rioSocket;
+    int serverSocket;
+    int rioSocket;
 
-	int port;
+    int port;
 
-	bool isInited;
+    bool isInited;
 };
 
 #endif /* JETSERVER_H_ */

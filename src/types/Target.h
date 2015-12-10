@@ -18,14 +18,14 @@ using namespace std;
 class Target
 {
 public:
-	Target();
-	virtual ~Target();
-	char* Serialize();
+    Target();
+    virtual ~Target();
+    char* Serialize();
 
-	TargetType type;
-	double distance;
-	double horizontalAngle;
-	double verticalAngle;
+    TargetType type;
+    double distance;
+    double horizontalAngle;
+    double verticalAngle;
 };
 
 #define TARGET_SIZE (sizeof(int) + 3*sizeof(double))

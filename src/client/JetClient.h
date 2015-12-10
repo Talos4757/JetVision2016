@@ -31,33 +31,33 @@
 class JetClient
 {
 public:
-	static void StartClient(int port, int serverPort, string serverAddress);
-	static void CloseClient();
-	static void CloseClient(void* ret);
-	static vector<Target>* GetTargets();
+    static void StartClient(int port, int serverPort, string serverAddress);
+    static void CloseClient();
+    static void CloseClient(void* ret);
+    static vector<Target>* GetTargets();
 
 private:
-	JetClient(int port, int serverPort, string serverAddress);
-	virtual ~JetClient();
+    JetClient(int port, int serverPort, string serverAddress);
+    virtual ~JetClient();
 
-	int Init();
-	int Connect();
-	int Query(RequestType type);
+    int Init();
+    int Connect();
+    int Query(RequestType type);
 
-	static bool isStarted;
-	static JetClient *client;
-	static pthread_t *clientThread;
-	static void* _StartAsync(void* arg);
+    static bool isStarted;
+    static JetClient *client;
+    static pthread_t *clientThread;
+    static void* _StartAsync(void* arg);
 
-	int port;
-	int serverPort;
-	string serverAddress;
+    int port;
+    int serverPort;
+    string serverAddress;
 
-	int clientSocket;
-	int connectRetryCount;
+    int clientSocket;
+    int connectRetryCount;
 
-	bool isInited;
-	bool isConnected;
+    bool isInited;
+    bool isConnected;
 };
 
 #endif /* CLIENT_JETCLIENT_H_ */

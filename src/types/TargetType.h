@@ -10,9 +10,9 @@
 
 enum TargetType
 {
-	NA = 0,
-	Low,
-	High
+    NA = 0,
+    Low,
+    High
 };
 
 #endif /* TYPES_TARGETTYPE_H_ */

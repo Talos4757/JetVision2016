@@ -19,17 +19,17 @@ using namespace cv;
 class Utils
 {
 public:
-	static bool SafeVidCapOpen(VideoCapture& videoCapture, const string& target);
-	static Point GetCenterOfMat(Mat& mat);
+    static bool SafeVidCapOpen(VideoCapture& videoCapture, const string& target);
+    static Point GetCenterOfMat(Mat& mat);
 };
 
 struct UpdaterStruct
 {
-	VideoCapture *vidCap;
-	Mat *frame;
-	pthread_mutex_t *frameLocker;
-	string* streamAddress;
-	volatile bool* stopFlag;
+    VideoCapture *vidCap;
+    Mat *frame;
+    pthread_mutex_t *frameLocker;
+    string* streamAddress;
+    volatile bool* stopFlag;
 };
 
 #endif /* UTILS_H_ */
