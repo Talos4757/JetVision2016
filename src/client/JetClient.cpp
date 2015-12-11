@@ -87,7 +87,6 @@ bool JetClient::Init()
     int optval = 1;
     setsockopt(this->clientSocket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
-
     if(this->clientSocket < 0)
     {
         cerr << "Client: Could not create socket! Errno: " << errno << endl;
@@ -141,35 +140,52 @@ bool JetClient::Connect()
 
     cerr << "Client: Connected to server!" << endl;
     this->isConnected = true;
+    this->connectRetryCount = 0;
 
     return true;
 }
 
 vector<Target>* JetClient::GetTargets()
 {
-    JetClient::client->SendRequest(TargetReq);
-
-    char buffer[sizeof(int)];
-    recv(JetClient::client->clientSocket, buffer, sizeof(int), 0);
-    int count = *(int*)buffer;
-
-    if(count == -1)
+    if(JetClient::client->isInited && JetClient::client->isConnected)
     {
-        //error
-        cerr << "Client: Got error -1 from server" << endl;
+        JetClient::client->SendRequest(TargetReq);
+
+        char buffer[sizeof(int)];
+        recv(JetClient::client->clientSocket, buffer, sizeof(int), 0);
+        int count = *(int*)buffer;
+
+        if(count == -1)
+        {
+            //error
+            cerr << "Client: Got error -1 from server" << endl;
+            return NULL;
+        }
+
+        vector<Target> *targets =  new vector<Target>();
+
+        char targetBuffer[TARGET_SIZE];
+        for(int i = 0; i < count; i++)
+        {
+            recv(JetClient::client->clientSocket, targetBuffer, TARGET_SIZE, 0);
+            Target t = Target::Deserialize(targetBuffer);
+
+            cerr << t.distance << endl;
+            cerr << t.horizontalAngle << endl;
+            cerr << t.verticalAngle << endl;
+            cerr << t.type << endl;
+            cerr << endl;
+
+            targets->push_back(t);
+        }
+
+        return targets;
+    }
+    else
+    {
+        cerr << "Client: Not initialized, cannot get targets" << endl;
         return NULL;
     }
-
-    vector<Target> *targets =  new vector<Target>();
-
-    char targetBuffer[TARGET_SIZE];
-    for(int i = 0; i < count; i++)
-    {
-        recv(JetClient::client->clientSocket, targetBuffer, TARGET_SIZE, 0);
-        targets->push_back(*(Target*)targetBuffer);
-    }
-
-    return targets;
 }
 
 bool JetClient::SendRequest(RequestType type)

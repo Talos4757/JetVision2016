@@ -13,7 +13,10 @@ class Target
 public:
     Target();
     virtual ~Target();
+
+    string ToString();
     char* Serialize();
+    static Target Deserialize(char* data);
 
     TargetType type;
     double distance;
