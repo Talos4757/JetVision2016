@@ -1,14 +1,7 @@
-/*
- * Target.h
- *
- *  Created on: Dec 5, 2015
- *      Author: ubuntu
- */
-
 #ifndef TARGET_H_
 #define TARGET_H_
 
-#include <stdio.h>
+#include <iostream>
 #include <string>
 
 #include "../types/TargetType.h"

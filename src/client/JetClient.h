@@ -1,10 +1,3 @@
-/*
- * JetClient.h
- *
- *  Created on: Dec 8, 2015
- *      Author: matan
- */
-
 #ifndef CLIENT_JETCLIENT_H_
 #define CLIENT_JETCLIENT_H_
 
@@ -25,7 +18,6 @@
 #include "../types/TargetType.h"
 
 #define TCP_SOCKET 0
-
 #define MAX_CONNECT_RETRIES 5
 
 class JetClient
@@ -40,9 +32,9 @@ private:
     JetClient(int port, int serverPort, string serverAddress);
     virtual ~JetClient();
 
-    int Init();
-    int Connect();
-    int Query(RequestType type);
+    bool Init();
+    bool Connect();
+    bool SendRequest(RequestType type);
 
     static bool isStarted;
     static JetClient *client;

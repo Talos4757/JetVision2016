@@ -1,10 +1,3 @@
-/*
- * Target.cpp
- *
- *  Created on: Dec 5, 2015
- *      Author: ubuntu
- */
-
 #include "../types/Target.h"
 
 Target::Target()

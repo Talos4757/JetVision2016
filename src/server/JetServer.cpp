@@ -1,15 +1,10 @@
-/*
- * JetServer.cpp
- *
- *  Created on: Dec 5, 2015
- *      Author: ubuntu
- */
-
 #include "JetServer.h"
+
 
 JetServer *JetServer::server = NULL;
 pthread_t *JetServer::serverThread = NULL;
 bool JetServer::started = false;
+
 
 void JetServer::StartServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port)
 {
@@ -27,13 +22,13 @@ void JetServer::StartServer(vector<Target> &targets, pthread_mutex_t &targetLock
         }
         else
         {
-            cerr << "StartServer(): Server failed to init!" << endl;
+            cerr << "Server: Failed to initialize!" << endl;
             delete aserver;
         }
     }
     else
     {
-        cerr << "StartServer(): Server already started..." << endl;
+        cerr << "Server: Already started..." << endl;
     }
 }
 
@@ -94,7 +89,7 @@ JetServer::~JetServer()
     close(this->rioSocket);
 }
 
-int JetServer::Init()
+bool JetServer::Init()
 {
     this->serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     int optval = 1;
@@ -103,7 +98,7 @@ int JetServer::Init()
     if(this->serverSocket < 0)
     {
         cerr << "Server: Could not create socket! Errno: " << errno << endl;
-        return 1;
+        return false;
     }
 
     struct sockaddr_in sa;
@@ -114,16 +109,16 @@ int JetServer::Init()
     if(bind(this->serverSocket, (struct sockaddr *)&sa, sizeof(sa)) != 0)
     {
         cerr << "Server: Could not bind socket on port " << this->port << ". Errno: " << errno << endl;
-        return 1;
+        return false;
     }
 
     cout << "Server: Server active on port " << this->port << endl;
     this->isInited = true;
 
-    return 0;
+    return true;
 }
 
-int JetServer::Listen()
+void JetServer::Listen()
 {
     if(this->isInited)
     {
@@ -134,7 +129,7 @@ int JetServer::Listen()
             if(listen(this->serverSocket, 2) < 0)
             {
                 cerr << "Server: Listening failed!" << endl;
-                return 1;
+                return;
             }
             else
             {
@@ -162,7 +157,6 @@ int JetServer::Listen()
     else
     {
         cerr << "Server: Not initialized, cannot listen" << endl;
-        return 1;
     }
 }
 
@@ -255,5 +249,3 @@ bool JetServer::SendTargets()
     cerr << "Server: Sent " << targetCount << " targets" << endl;
     return true;
 }
-
-

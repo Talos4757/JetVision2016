@@ -1,15 +1,10 @@
-/*
- * JetClient.cpp
- *
- *  Created on: Dec 8, 2015
- *      Author: matan
- */
-
 #include "JetClient.h"
+
 
 JetClient *JetClient::client = NULL;
 pthread_t *JetClient::clientThread = NULL;
 bool JetClient::isStarted = false;
+
 
 void JetClient::StartClient(int port, int serverPort, string serverAddress)
 {
@@ -86,7 +81,7 @@ JetClient::~JetClient()
     close(this->clientSocket);
 }
 
-int JetClient::Init()
+bool JetClient::Init()
 {
     this->clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     int optval = 1;
@@ -96,7 +91,7 @@ int JetClient::Init()
     if(this->clientSocket < 0)
     {
         cerr << "Client: Could not create socket! Errno: " << errno << endl;
-        return 1;
+        return false;
     }
 
     struct sockaddr_in sa;
@@ -107,16 +102,16 @@ int JetClient::Init()
     if(bind(this->clientSocket, (struct sockaddr *)&sa, sizeof(sa)) != 0)
     {
         cerr << "Client: Could not bind socket on port " << this->port << ". Errno: " << errno << endl;
-        return 1;
+        return false;
     }
 
     this->isInited = true;
     cerr << "Client: Client active on port " << this->port << endl;
 
-    return 0;
+    return true;
 }
 
-int JetClient::Connect()
+bool JetClient::Connect()
 {
     cout << "Client: Connecting to server..." << endl;
 
@@ -137,23 +132,22 @@ int JetClient::Connect()
         if(this->connectRetryCount > MAX_CONNECT_RETRIES)
         {
             cerr << "Client: Max connect retries exceeded" << endl;
-
-            return 1;
+            return false;
         }
 
-        //sleep(1); // wait one second, maybe the server will init..
+        sleep(1); // wait one second, maybe the server will init..
         this->connectRetryCount++;
     }
 
     cerr << "Client: Connected to server!" << endl;
     this->isConnected = true;
 
-    return 0;
+    return true;
 }
 
 vector<Target>* JetClient::GetTargets()
 {
-    JetClient::client->Query(TargetReq);
+    JetClient::client->SendRequest(TargetReq);
 
     char buffer[sizeof(int)];
     recv(JetClient::client->clientSocket, buffer, sizeof(int), 0);
@@ -178,14 +172,14 @@ vector<Target>* JetClient::GetTargets()
     return targets;
 }
 
-int JetClient::Query(RequestType type)
+bool JetClient::SendRequest(RequestType type)
 {
     if(this->isInited && this->isConnected)
     {
         if(send(this->clientSocket, &type, sizeof(int), 0) > 0)
         {
             cerr << "Client: Queried server, awaiting response" << endl;
-            return 0;
+            return true;
         }
         else
         {
@@ -193,5 +187,5 @@ int JetClient::Query(RequestType type)
         }
     }
 
-    return -1;
+    return false;
 }

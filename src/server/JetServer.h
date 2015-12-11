@@ -1,10 +1,3 @@
-/*
- * JetServer.h
- *
- *  Created on: Dec 5, 2015
- *      Author: ubuntu
- */
-
 #ifndef JETSERVER_H_
 #define JETSERVER_H_
 
@@ -39,9 +32,11 @@ private:
     JetServer(vector<Target> &targets, pthread_mutex_t &targetLocker, int port);
     virtual ~JetServer();
 
-    int Init();
-    int Listen();
+    bool Init();
+
+    void Listen();
     void HandleRequests();
+
     bool SendTargets();
     bool SendInvalidRequestResponse();
 
