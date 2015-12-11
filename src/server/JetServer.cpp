@@ -220,13 +220,11 @@ bool JetServer::SendTargets()
 {
     cerr << "Server: Attempting to send targets..." << endl;
 
-    vector<Target>* targetsCopy;
-
     pthread_mutex_lock(&this->targetLocker);
-    targetsCopy = new vector<Target>(this->targets);
+    vector<Target> targetsCopy(this->targets);
     pthread_mutex_unlock(&this->targetLocker);
 
-    int targetCount = targetsCopy->size();
+    int targetCount = targetsCopy.size();
 
      if(send(this->rioSocket,(void*)&targetCount, sizeof(int), 0) == -1)
      {
@@ -236,13 +234,14 @@ bool JetServer::SendTargets()
 
     for(int i = 0; i < targetCount; i++)
     {
-        cerr << (*targetsCopy)[i].distance << endl;
-        cerr << (*targetsCopy)[i].horizontalAngle << endl;
-        cerr << (*targetsCopy)[i].verticalAngle << endl;
-        cerr << (*targetsCopy)[i].type << endl;
-        cerr << endl;
+    	cerr << "---- Target Information ----" << endl;
+        cerr << "Distance: " << targetsCopy[i].distance << endl;
+        cerr << "H. angle: " << targetsCopy[i].horizontalAngle << endl;
+        cerr << "V. angle: " << targetsCopy[i].verticalAngle << endl;
+        cerr << "Target type: " << targetsCopy[i].type << endl;
+        cerr << "----------------------------" << endl;
 
-        char* encodedTarget = (*targetsCopy)[i].Serialize();
+        char* encodedTarget = targetsCopy[i].Serialize();
 
         if(send(this->rioSocket, encodedTarget, TARGET_SIZE, 0) == -1)
         {
@@ -251,8 +250,6 @@ bool JetServer::SendTargets()
 
         delete[] encodedTarget;
     }
-
-    delete targetsCopy;
 
     cerr << "Server: Sent " << targetCount << " targets" << endl;
     return true;

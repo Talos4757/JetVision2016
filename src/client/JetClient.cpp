@@ -170,11 +170,12 @@ vector<Target>* JetClient::GetTargets()
             recv(JetClient::client->clientSocket, targetBuffer, TARGET_SIZE, 0);
             Target t = Target::Deserialize(targetBuffer);
 
-            cerr << t.distance << endl;
-            cerr << t.horizontalAngle << endl;
-            cerr << t.verticalAngle << endl;
-            cerr << t.type << endl;
-            cerr << endl;
+            cerr << "---- Target Information ----" << endl;
+            cerr << "Distance: " << t.distance << endl;
+            cerr << "H. angle: " << t.horizontalAngle << endl;
+            cerr << "V. angle: " << t.verticalAngle << endl;
+            cerr << "Target type: " << t.type << endl;
+            cerr << "----------------------------" << endl;
 
             targets->push_back(t);
         }
